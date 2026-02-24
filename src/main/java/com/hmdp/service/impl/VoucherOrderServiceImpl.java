@@ -9,8 +9,10 @@ import com.hmdp.service.IVoucherOrderService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.utils.RedisIdWorker;
 import com.hmdp.utils.UserHolder;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import sun.awt.AppContext;
 
 import javax.annotation.Resource;
 import java.time.LocalDateTime;
@@ -32,7 +34,6 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     @Resource
     private RedisIdWorker redisIdWorker;
 
-    @Transactional
     @Override
     public Result seckillVoucher(Long voucherId) {
         // 1. 查询优惠券
@@ -51,6 +52,24 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         if (voucher.getStock() < 1) {
             return Result.fail("库存不足！");
         }
+
+        Long userId = UserHolder.getUser().getId();
+        synchronized (userId.toString().intern()){
+            IVoucherOrderService proxy =(IVoucherOrderService) AopContext.currentProxy();
+            return proxy.createVoucherOrder(voucherId);
+        }
+    }
+
+    @Transactional
+    public Result createVoucherOrder(Long voucherId) {
+        // 一人一单
+        Long UserId = UserHolder.getUser().getId();
+
+        int count = query().eq("user_id", UserId).eq("voucher_id", voucherId).count();
+        if ( count > 0){
+            return Result.fail("用户已经购买过一次");
+        }
+
         // 5. 扣减库存
         boolean success = seckillVoucherService.update()
                 .setSql("stock = stock - 1 ")
