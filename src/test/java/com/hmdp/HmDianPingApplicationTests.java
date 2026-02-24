@@ -1,6 +1,7 @@
 package com.hmdp;
 
 import com.hmdp.service.impl.ShopServiceImpl;
+import com.hmdp.utils.RedisIdWorker;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -11,6 +12,8 @@ class HmDianPingApplicationTests {
 
     @Resource
     private ShopServiceImpl shopService;
+
+    private RedisIdWorker redisIdWorker;
 
     @Test
     public void saveShop2Redis(){
